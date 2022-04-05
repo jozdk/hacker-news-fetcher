@@ -41,13 +41,20 @@ const App = () => {
 
   // const [searchTerm, setSearchTerm] = useState(localStorage.getItem("search") || "");
   const [searchTerm, setSearchTerm] = useSemiPersistentState("search", "");
-
   const [stories, setStories] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isError, setIsError] = useState(false);
 
   useEffect(() => {
-    getAsyncStories().then((result) => {
+    setIsLoading(true);
+
+    getAsyncStories()
+    .then((result) => {
       setStories(result.data.stories);
+      setIsLoading(false);
     })
+    .catch(() => setIsError(true));
+
   }, []); // Only run side-effect once the component renders for the first time. This triggers a warning by CRA though:
   // React Hook useEffect has a missing dependency: 'getAsyncStories'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
 
@@ -81,7 +88,10 @@ const App = () => {
 
       <hr />
 
-      <List list={searchedStories} onRemoveItem={handleRemoveStory} />
+      {isError && <p>Something went wrong...</p>}
+
+      {isLoading ? <p>Loading...</p> : <List list={searchedStories} onRemoveItem={handleRemoveStory} />}
+      
     </div>
   );
 };

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useReducer } from "react";
 
 // Custom Hook
 const useSemiPersistentState = (key, initialState) => {
@@ -9,6 +9,17 @@ const useSemiPersistentState = (key, initialState) => {
   }, [value, key]);
 
   return [value, setValue];
+}
+
+const storiesReducer = (state, action) => {
+  switch(action.type) {
+    case "SET_STORIES":
+      return action.payload;
+    case "REMOVE_STORY":
+      return state.filter((story) => action.payload.objectID !== story.objectID);
+    default:
+      throw new Error();
+  }
 }
 
 const App = () => {
@@ -41,7 +52,9 @@ const App = () => {
 
   // const [searchTerm, setSearchTerm] = useState(localStorage.getItem("search") || "");
   const [searchTerm, setSearchTerm] = useSemiPersistentState("search", "");
-  const [stories, setStories] = useState([]);
+  const [stories, dispatchStories] = useReducer(storiesReducer, []);
+
+  //const [stories, setStories] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isError, setIsError] = useState(false);
 
@@ -50,7 +63,11 @@ const App = () => {
 
     getAsyncStories()
     .then((result) => {
-      setStories(result.data.stories);
+      //setStories(result.data.stories);
+      dispatchStories({
+        type: "SET_STORIES",
+        payload: result.data.stories
+      });
       setIsLoading(false);
     })
     .catch(() => setIsError(true));
@@ -67,8 +84,12 @@ const App = () => {
   }
 
   const handleRemoveStory = (item) => {
-    const newStories = stories.filter((story) => item.objectID !== story.objectID);
-    setStories(newStories);
+    //const newStories = stories.filter((story) => item.objectID !== story.objectID);
+    //setStories(newStories);
+    dispatchStories({
+      type: "REMOVE_STORY",
+      payload: item
+    });
   }
 
   const searchedStories = stories.filter((story) => story.title.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -90,7 +111,11 @@ const App = () => {
 
       {isError && <p>Something went wrong...</p>}
 
-      {isLoading ? <p>Loading...</p> : <List list={searchedStories} onRemoveItem={handleRemoveStory} />}
+      {isLoading ? (
+        <p>Loading...</p>
+      ) : (
+        <List list={searchedStories} onRemoveItem={handleRemoveStory} />
+      )}
       
     </div>
   );

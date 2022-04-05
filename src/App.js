@@ -31,15 +31,25 @@ const App = () => {
     }
   ];
 
+  const getAsyncStories = () => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve({ data: { stories: initialStories } })
+      }, 2000);
+    });
+  };
+
   // const [searchTerm, setSearchTerm] = useState(localStorage.getItem("search") || "");
   const [searchTerm, setSearchTerm] = useSemiPersistentState("search", "");
 
-  const [stories, setStories] = useState(initialStories);
+  const [stories, setStories] = useState([]);
 
-  const handleRemoveStory = (item) => {
-    const newStories = stories.filter((story) => item.objectID !== story.objectID);
-    setStories(newStories);
-  }
+  useEffect(() => {
+    getAsyncStories().then((result) => {
+      setStories(result.data.stories);
+    })
+  }, []); // Only run side-effect once the component renders for the first time. This triggers a warning by CRA though:
+  // React Hook useEffect has a missing dependency: 'getAsyncStories'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
 
   useEffect(() => {
     localStorage.setItem("search", searchTerm);
@@ -47,6 +57,11 @@ const App = () => {
 
   const handleSearch = (event) => {
     setSearchTerm(event.target.value);
+  }
+
+  const handleRemoveStory = (item) => {
+    const newStories = stories.filter((story) => item.objectID !== story.objectID);
+    setStories(newStories);
   }
 
   const searchedStories = stories.filter((story) => story.title.toLowerCase().includes(searchTerm.toLowerCase()));

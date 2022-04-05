@@ -1,5 +1,16 @@
 import React, { useState, useEffect } from "react";
 
+// Custom Hook
+const useSemiPersistentState = (key, initialState) => {
+  const [value, setValue] = useState(localStorage.getItem(key) || initialState);
+
+  useEffect(() => {
+    localStorage.setItem(key, value);
+  }, [value, key]);
+  
+  return [value, setValue];
+}
+
 const App = () => {
   const stories = [
     {
@@ -20,7 +31,8 @@ const App = () => {
     }
   ];
 
-  const [searchTerm, setSearchTerm] = useState(localStorage.getItem("search") || "");
+  // const [searchTerm, setSearchTerm] = useState(localStorage.getItem("search") || "");
+  const [searchTerm, setSearchTerm] = useSemiPersistentState("search", "React");
 
   useEffect(() => {
     localStorage.setItem("search", searchTerm);
@@ -29,8 +41,6 @@ const App = () => {
   const handleSearch = (event) => {
     setSearchTerm(event.target.value);
   }
-
-
 
   const searchedStories = stories.filter((story) => story.title.toLowerCase().includes(searchTerm.toLowerCase()));
 

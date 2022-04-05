@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 
 // Custom Hook
 const useSemiPersistentState = (key, initialState) => {
@@ -7,12 +7,12 @@ const useSemiPersistentState = (key, initialState) => {
   useEffect(() => {
     localStorage.setItem(key, value);
   }, [value, key]);
-  
+
   return [value, setValue];
 }
 
 const App = () => {
-  const stories = [
+  const initialStories = [
     {
       title: "React",
       url: "https://reactjs.org/",
@@ -32,7 +32,14 @@ const App = () => {
   ];
 
   // const [searchTerm, setSearchTerm] = useState(localStorage.getItem("search") || "");
-  const [searchTerm, setSearchTerm] = useSemiPersistentState("search", "React");
+  const [searchTerm, setSearchTerm] = useSemiPersistentState("search", "");
+
+  const [stories, setStories] = useState(initialStories);
+
+  const handleRemoveStory = (item) => {
+    const newStories = stories.filter((story) => item.objectID !== story.objectID);
+    setStories(newStories);
+  }
 
   useEffect(() => {
     localStorage.setItem("search", searchTerm);
@@ -48,38 +55,73 @@ const App = () => {
     <div>
       <h1>My Hacker Stories</h1>
 
-      <Search onSearch={handleSearch} search={searchTerm} />
+      <InputWithLabel
+        id="search"
+        value={searchTerm}
+        isFocused
+        onInputChange={handleSearch}
+      >
+        Search:
+      </InputWithLabel>
 
       <hr />
 
-      <List list={searchedStories} />
+      <List list={searchedStories} onRemoveItem={handleRemoveStory} />
     </div>
   );
 };
 
-const List = ({ list }) => (
+const List = ({ list, onRemoveItem }) => (
   <ul>
-    {list.map((item) => <Item key={item.objectID} item={item} />)}
+    {list.map((item) => <Item
+      key={item.objectID}
+      item={item}
+      onRemoveItem={onRemoveItem}
+    />)}
   </ul>
 );
 
-const Item = ({ item }) => (
-  <li>
-    <span>
-      <a href={item.url}>{item.title}</a>
-    </span>
-    <span>{item.author}</span>
-    <span>{item.num_comments}</span>
-    <span>{item.points}</span>
-  </li>
-);
-
-const Search = ({ onSearch, search }) => {
+const Item = ({ item, onRemoveItem }) => {
   return (
-    <div>
-      <label htmlFor="search">Search: </label>
-      <input type="text" id="search" value={search} onChange={onSearch} />
-    </div>
+    <li>
+      <span>
+        <a href={item.url}>{item.title}</a>
+      </span>
+      <span>{item.author}</span>
+      <span>{item.num_comments}</span>
+      <span>{item.points}</span>
+      <span>
+        <button type="button" onClick={() => onRemoveItem(item)}>
+          Dismiss
+        </button>
+      </span>
+    </li>
+  );
+}
+
+
+const InputWithLabel = ({ id, value, type = "text", onInputChange, isFocused, children }) => {
+  const inputRef = useRef();
+
+  useEffect(() => {
+    if (isFocused && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [isFocused]);
+
+  return (
+    <>
+      <label htmlFor={id}>{children}</label>
+      &nbsp;
+      <input
+        ref={inputRef}
+        type={type}
+        id={id}
+        value={value}
+        autoFocus
+        onChange={onInputChange}
+      />
+    </>
   )
 };
 

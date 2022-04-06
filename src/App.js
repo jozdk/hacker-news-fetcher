@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useReducer } from "react";
+import React, { useState, useEffect, useRef, useReducer, useCallback } from "react";
 
 const API_ENDPOINT = "https://hn.algolia.com/api/v1/search?query="
 
@@ -47,15 +47,16 @@ const storiesReducer = (state, action) => {
 
 const App = () => {
   // const [searchTerm, setSearchTerm] = useState(localStorage.getItem("search") || "");
-  const [searchTerm, setSearchTerm] = useSemiPersistentState("search", "");
+  const [searchTerm, setSearchTerm] = useSemiPersistentState("search", "React");
   const [stories, dispatchStories] = useReducer(storiesReducer, { data: [], isLoading: false, isError: false });
+  const [url, setUrl] = useState(`${API_ENDPOINT}${searchTerm}`);
 
-  useEffect(() => {
+  const handleFetchStories = useCallback(() => {
     if (!searchTerm) return;
 
     dispatchStories({ type: "STORIES_FETCH_INIT" });
 
-    fetch(`${API_ENDPOINT}${searchTerm}`)
+    fetch(url)
       .then((response) => response.json())
       .then((result) => {
         dispatchStories({
@@ -64,16 +65,15 @@ const App = () => {
         });
       })
       .catch(() => dispatchStories({ type: "STORIES_FETCH_FAILURE" }));
+  }, [url]);
 
-  }, [searchTerm]);
+  useEffect(() => {
+    handleFetchStories();
+  }, [handleFetchStories]);
 
   useEffect(() => {
     localStorage.setItem("search", searchTerm);
   }, [searchTerm]); // Only re-run the effect if searchTerm changes
-
-  const handleSearch = (event) => {
-    setSearchTerm(event.target.value);
-  }
 
   const handleRemoveStory = (item) => {
     dispatchStories({
@@ -82,7 +82,13 @@ const App = () => {
     });
   }
 
-  // const searchedStories = stories.data.filter((story) => story.title.toLowerCase().includes(searchTerm.toLowerCase()));
+  const handleSearchInput = (event) => {
+    setSearchTerm(event.target.value);
+  }
+
+  const handleSearchSubmit = () => {
+    setUrl(`${API_ENDPOINT}${searchTerm}`);
+  }
 
   return (
     <div>
@@ -92,10 +98,18 @@ const App = () => {
         id="search"
         value={searchTerm}
         isFocused
-        onInputChange={handleSearch}
+        onInputChange={handleSearchInput}
       >
-        Search:
+        <strong>Search:</strong>
       </InputWithLabel>
+
+      <button
+        type="button"
+        disabled={!searchTerm}
+        onClick={handleSearchSubmit}
+      >
+        Submit
+      </button>
 
       <hr />
 

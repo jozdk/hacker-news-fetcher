@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef, useReducer } from "react";
 
+const API_ENDPOINT = "https://hn.algolia.com/api/v1/search?query="
+
 // Custom Hook
 const useSemiPersistentState = (key, initialState) => {
   const [value, setValue] = useState(localStorage.getItem(key) || initialState);
@@ -11,8 +13,9 @@ const useSemiPersistentState = (key, initialState) => {
   return [value, setValue];
 }
 
+// Reducer function
 const storiesReducer = (state, action) => {
-  switch(action.type) {
+  switch (action.type) {
     case "STORIES_FETCH_INIT":
       return {
         ...state,
@@ -43,52 +46,26 @@ const storiesReducer = (state, action) => {
 }
 
 const App = () => {
-  const initialStories = [
-    {
-      title: "React",
-      url: "https://reactjs.org/",
-      author: "Jordan Walke",
-      num_comments: 3,
-      points: 4,
-      objectID: 0
-    },
-    {
-      title: "Redux",
-      url: "https://redux.js.org/",
-      author: "Dan Abramov, Andrew Clark",
-      num_comments: 2,
-      points: 5,
-      objectID: 1
-    }
-  ];
-
-  const getAsyncStories = () => {
-    return new Promise((resolve, reject) => {
-      // setTimeout(() => {
-      //   resolve({ data: { stories: initialStories } })
-      // }, 2000);
-      setTimeout(reject, 2000);
-    });
-  };
-
   // const [searchTerm, setSearchTerm] = useState(localStorage.getItem("search") || "");
   const [searchTerm, setSearchTerm] = useSemiPersistentState("search", "");
   const [stories, dispatchStories] = useReducer(storiesReducer, { data: [], isLoading: false, isError: false });
 
   useEffect(() => {
+    if (!searchTerm) return;
+
     dispatchStories({ type: "STORIES_FETCH_INIT" });
 
-    getAsyncStories()
-    .then((result) => {
-      dispatchStories({
-        type: "STORIES_FETCH_SUCCESS",
-        payload: result.data.stories
-      });
-    })
-    .catch(() => dispatchStories({ type: "STORIES_FETCH_FAILURE" }));
+    fetch(`${API_ENDPOINT}${searchTerm}`)
+      .then((response) => response.json())
+      .then((result) => {
+        dispatchStories({
+          type: "STORIES_FETCH_SUCCESS",
+          payload: result.hits
+        });
+      })
+      .catch(() => dispatchStories({ type: "STORIES_FETCH_FAILURE" }));
 
-  }, []); // Only run side-effect once the component renders for the first time. This triggers a warning by CRA though:
-  // React Hook useEffect has a missing dependency: 'getAsyncStories'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  }, [searchTerm]);
 
   useEffect(() => {
     localStorage.setItem("search", searchTerm);
@@ -105,7 +82,7 @@ const App = () => {
     });
   }
 
-  const searchedStories = stories.data.filter((story) => story.title.toLowerCase().includes(searchTerm.toLowerCase()));
+  // const searchedStories = stories.data.filter((story) => story.title.toLowerCase().includes(searchTerm.toLowerCase()));
 
   return (
     <div>
@@ -127,9 +104,9 @@ const App = () => {
       {stories.isLoading ? (
         <p>Loading...</p>
       ) : (
-        <List list={searchedStories} onRemoveItem={handleRemoveStory} />
+        <List list={stories.data} onRemoveItem={handleRemoveStory} />
       )}
-      
+
     </div>
   );
 };

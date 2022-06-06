@@ -10,7 +10,9 @@ import {
   StyledButtonLarge,
   StyledSearchForm,
   StyledLabel,
-  StyledInput
+  StyledInput,
+  StyledCheckboxContainer,
+  StyledCheckmark
 } from "./StyledComponents";
 
 const API_ENDPOINT = "https://hn.algolia.com/api/v1/search?query=";
@@ -105,6 +107,10 @@ const App = () => {
     event.preventDefault();
   }
 
+  const handleCheckboxChange = (event) => {
+    
+  }
+
   return (
     <StyledContainer>
       <StyledHeadlinePrimary>My Hacker Stories</StyledHeadlinePrimary>
@@ -138,6 +144,18 @@ const List = ({ list, onRemoveItem }) => (
   </ul>
 );
 
+const ListHead = () => {
+  return (
+    <StyledHeadItem>
+      <StyledColumn width="40%">Title</StyledColumn>
+      <StyledColumn width="30%">Author</StyledColumn>
+      <StyledColumn width="10%">Comments</StyledColumn>
+      <StyledColumn width="10%">Points</StyledColumn>
+      <StyledColumn width="10%"></StyledColumn>
+    </StyledHeadItem>
+  )
+}
+
 const Item = ({ item, onRemoveItem }) => {
   return (
     <StyledItem>
@@ -156,7 +174,6 @@ const Item = ({ item, onRemoveItem }) => {
 
   );
 }
-
 
 const InputWithLabel = ({ id, value, type = "text", onInputChange, isFocused, children }) => {
   const inputRef = useRef();
@@ -180,8 +197,18 @@ const InputWithLabel = ({ id, value, type = "text", onInputChange, isFocused, ch
         onChange={onInputChange}
       />
     </>
+
   );
 };
+
+const Checkbox = ({ label }) => {
+  return (
+    <StyledCheckboxContainer>{label}
+        <input className="checkbox" type="checkbox" />
+        <StyledCheckmark></StyledCheckmark>
+    </StyledCheckboxContainer>
+  )
+}
 
 const SearchForm = ({ searchTerm, onSearchInput, onSearchSubmit }) => {
   return (
@@ -198,6 +225,7 @@ const SearchForm = ({ searchTerm, onSearchInput, onSearchSubmit }) => {
       <StyledButtonLarge type="submit" disabled={!searchTerm}>
         Submit
       </StyledButtonLarge>
+      <Checkbox label="Latest" />
     </StyledSearchForm>
   )
 }

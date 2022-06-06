@@ -15,7 +15,7 @@ import {
   StyledCheckmark
 } from "./StyledComponents";
 
-const API_ENDPOINT = "https://hn.algolia.com/api/v1/search?query=";
+const API_ENDPOINT = "https://hn.algolia.com/api/v1/search";
 
 // Custom Hook
 const useSemiPersistentState = (key, initialState) => {
@@ -63,8 +63,9 @@ const storiesReducer = (state, action) => {
 const App = () => {
   // const [searchTerm, setSearchTerm] = useState(localStorage.getItem("search") || "");
   const [searchTerm, setSearchTerm] = useSemiPersistentState("search", "React");
+  const [searchLatest, setSearchLatest] = useState(false);
   const [stories, dispatchStories] = useReducer(storiesReducer, { data: [], isLoading: false, isError: false });
-  const [url, setUrl] = useState(`${API_ENDPOINT}${searchTerm}`);
+  const [url, setUrl] = useState(`${API_ENDPOINT}${searchLatest ? "_by_date" : ""}?query=${searchTerm}&tags=story`);
 
   const handleFetchStories = useCallback(async () => {
     dispatchStories({ type: "STORIES_FETCH_INIT" });
@@ -102,14 +103,22 @@ const App = () => {
   }
 
   const handleSearchSubmit = (event) => {
-    setUrl(`${API_ENDPOINT}${searchTerm}`);
+    setUrl(`${API_ENDPOINT}${searchLatest ? "_by_date" : ""}?query=${searchTerm}&tags=story`);
 
     event.preventDefault();
   }
 
   const handleCheckboxChange = (event) => {
-    
+    if (event.target.checked) {
+      setSearchLatest("_by_date");
+    } else {
+      setSearchLatest("");
+    }
   }
+
+  useEffect(() => {
+    console.log(url)
+  }, [url]);
 
   return (
     <StyledContainer>
@@ -119,6 +128,7 @@ const App = () => {
         searchTerm={searchTerm}
         onSearchInput={handleSearchInput}
         onSearchSubmit={handleSearchSubmit}
+        onCheckboxChange={handleCheckboxChange}
       />
 
       {stories.isError && <p>Something went wrong...</p>}
@@ -201,16 +211,16 @@ const InputWithLabel = ({ id, value, type = "text", onInputChange, isFocused, ch
   );
 };
 
-const Checkbox = ({ label }) => {
+const Checkbox = ({ label, onInputChange }) => {
   return (
     <StyledCheckboxContainer>{label}
-        <input className="checkbox" type="checkbox" />
+        <input type="checkbox" onClick={onInputChange} />
         <StyledCheckmark></StyledCheckmark>
     </StyledCheckboxContainer>
   )
 }
 
-const SearchForm = ({ searchTerm, onSearchInput, onSearchSubmit }) => {
+const SearchForm = ({ searchTerm, onSearchInput, onSearchSubmit, onCheckboxChange }) => {
   return (
     <StyledSearchForm onSubmit={onSearchSubmit}>
       <InputWithLabel
@@ -225,7 +235,7 @@ const SearchForm = ({ searchTerm, onSearchInput, onSearchSubmit }) => {
       <StyledButtonLarge type="submit" disabled={!searchTerm}>
         Submit
       </StyledButtonLarge>
-      <Checkbox label="Latest" />
+      <Checkbox label="Latest" onInputChange={onCheckboxChange} />
     </StyledSearchForm>
   )
 }

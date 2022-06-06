@@ -22,6 +22,13 @@ export const StyledItem = styled.li`
   padding-bottom: 5px;
 `;
 
+export const StyledHeadItem = styled(StyledItem)`
+font-weight: 600;
+font-size: 1.5rem;
+border-bottom: 1px solid black;
+margin-bottom: 15px;
+`;
+
 export const StyledColumn = styled.span`
   padding: 0 5px;
   white-space: nowrap;

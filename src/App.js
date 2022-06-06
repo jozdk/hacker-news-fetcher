@@ -3,6 +3,7 @@ import axios from "axios";
 import {
   StyledContainer,
   StyledHeadlinePrimary,
+  StyledHeadItem,
   StyledItem,
   StyledColumn,
   StyledButtonSmall,
@@ -128,6 +129,7 @@ const App = () => {
 
 const List = ({ list, onRemoveItem }) => (
   <ul>
+    <ListHead />
     {list.map((item) => <Item
       key={item.objectID}
       item={item}

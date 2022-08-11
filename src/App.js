@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useReducer, useCallback } from "react";
 import axios from "axios";
+import { sortBy } from "lodash";
 import {
   StyledContainer,
   StyledHeadlinePrimary,
@@ -14,6 +15,7 @@ import {
   StyledCheckboxContainer,
   StyledCheckmark
 } from "./StyledComponents";
+import { IconChevron } from "./icons/IconChevron.jsx";
 
 const API_ENDPOINT = "https://hn.algolia.com/api/v1/search";
 
@@ -143,24 +145,64 @@ const App = () => {
   );
 };
 
-const List = ({ list, onRemoveItem }) => (
-  <ul>
-    <ListHead />
-    {list.map((item) => <Item
-      key={item.objectID}
-      item={item}
-      onRemoveItem={onRemoveItem}
-    />)}
-  </ul>
-);
+const SORTS = {
+  NONE: (list) => list,
+  TITLE: (list) => sortBy(list, "title"),
+  AUTHOR: (list) => sortBy(list, "author"),
+  COMMENT: (list) => sortBy(list, "num_comments").reverse(),
+  POINT: (list) => sortBy(list, "points").reverse()
+}
 
-const ListHead = () => {
+const List = ({ list, onRemoveItem }) => {
+  const [sort, setSort] = useState({
+    sortKey: "NONE",
+    isReverse: false
+  });
+
+  const handleSort = (sortKey) => {
+    const isReverse = sort.sortKey === sortKey && !sort.isReverse;
+    setSort({
+      sortKey,
+      isReverse
+    });
+  }
+
+  const sortFunction = SORTS[sort.sortKey];
+  const sortedList = sort.isReverse
+    ? sortFunction(list).reverse()
+    : sortFunction(list);
+
+  return (
+    <ul>
+      <ListHead sort={sort} handleSort={handleSort} />
+      {sortedList.map((item) => <Item
+        key={item.objectID}
+        item={item}
+        onRemoveItem={onRemoveItem}
+      />)}
+    </ul>
+  )
+};
+
+const ListHead = ({ sort, handleSort }) => {
   return (
     <StyledHeadItem>
-      <StyledColumn width="40%">Title</StyledColumn>
-      <StyledColumn width="30%">Author</StyledColumn>
-      <StyledColumn width="10%">Comments</StyledColumn>
-      <StyledColumn width="10%">Points</StyledColumn>
+      <StyledColumn width="40%">
+        Title
+        <IconChevron sort={sort} column="TITLE" handleSort={handleSort} />
+      </StyledColumn>
+      <StyledColumn width="30%">
+        Author
+        <IconChevron sort={sort} column="AUTHOR" handleSort={handleSort} />
+      </StyledColumn>
+      <StyledColumn width="10%">
+        Comments
+        <IconChevron sort={sort} column="COMMENT" handleSort={handleSort} />
+      </StyledColumn>
+      <StyledColumn width="10%">
+        Points
+        <IconChevron sort={sort} column="POINT" handleSort={handleSort} />
+      </StyledColumn>
       <StyledColumn width="10%"></StyledColumn>
     </StyledHeadItem>
   )
@@ -214,8 +256,8 @@ const InputWithLabel = ({ id, value, type = "text", onInputChange, isFocused, ch
 const Checkbox = ({ label, onInputChange }) => {
   return (
     <StyledCheckboxContainer>{label}
-        <input type="checkbox" onClick={onInputChange} />
-        <StyledCheckmark></StyledCheckmark>
+      <input type="checkbox" onClick={onInputChange} />
+      <StyledCheckmark></StyledCheckmark>
     </StyledCheckboxContainer>
   )
 }

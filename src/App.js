@@ -18,6 +18,13 @@ import {
 import { IconChevron } from "./icons/IconChevron.jsx";
 
 const API_ENDPOINT = "https://hn.algolia.com/api/v1/search";
+const SORTS = {
+  NONE: (list) => list,
+  TITLE: (list) => sortBy(list, "title"),
+  AUTHOR: (list) => sortBy(list, "author"),
+  COMMENT: (list) => sortBy(list, "num_comments").reverse(),
+  POINT: (list) => sortBy(list, "points").reverse()
+}
 
 // Custom Hook
 const useSemiPersistentState = (key, initialState) => {
@@ -62,12 +69,16 @@ const storiesReducer = (state, action) => {
   }
 }
 
+const getURL = (searchTerm, searchLatest) => {
+  return `${API_ENDPOINT}${searchLatest}?query=${searchTerm}&tags=story`;
+}
+
 const App = () => {
   // const [searchTerm, setSearchTerm] = useState(localStorage.getItem("search") || "");
   const [searchTerm, setSearchTerm] = useSemiPersistentState("search", "React");
-  const [searchLatest, setSearchLatest] = useState(false);
+  const [searchLatest, setSearchLatest] = useState("");
   const [stories, dispatchStories] = useReducer(storiesReducer, { data: [], isLoading: false, isError: false });
-  const [url, setUrl] = useState(`${API_ENDPOINT}${searchLatest ? "_by_date" : ""}?query=${searchTerm}&tags=story`);
+  const [url, setUrl] = useState(getURL(searchTerm, searchLatest));
 
   const handleFetchStories = useCallback(async () => {
     dispatchStories({ type: "STORIES_FETCH_INIT" });
@@ -89,10 +100,6 @@ const App = () => {
     handleFetchStories();
   }, [handleFetchStories]);
 
-  useEffect(() => {
-    localStorage.setItem("search", searchTerm);
-  }, [searchTerm]); // Only re-run the effect if searchTerm changes
-
   const handleRemoveStory = (item) => {
     dispatchStories({
       type: "REMOVE_STORY",
@@ -105,7 +112,7 @@ const App = () => {
   }
 
   const handleSearchSubmit = (event) => {
-    setUrl(`${API_ENDPOINT}${searchLatest ? "_by_date" : ""}?query=${searchTerm}&tags=story`);
+    setUrl(getURL(searchTerm, searchLatest));
 
     event.preventDefault();
   }
@@ -144,14 +151,6 @@ const App = () => {
 
   );
 };
-
-const SORTS = {
-  NONE: (list) => list,
-  TITLE: (list) => sortBy(list, "title"),
-  AUTHOR: (list) => sortBy(list, "author"),
-  COMMENT: (list) => sortBy(list, "num_comments").reverse(),
-  POINT: (list) => sortBy(list, "points").reverse()
-}
 
 const List = ({ list, onRemoveItem }) => {
   const [sort, setSort] = useState({

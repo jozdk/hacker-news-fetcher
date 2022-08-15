@@ -58,6 +58,7 @@ export const StyledButton = styled.button`
 
 export const StyledButtonSmall = styled(StyledButton)`
   padding: 5px;
+  ${({ marginRight }) => marginRight && `margin-right: 10px` }
 `;
 
 export const StyledButtonLarge = styled(StyledButton)`
@@ -151,3 +152,6 @@ export const StyledCheckboxContainer = styled.label`
   }
 `;
 
+export const StyledLastSearchesContainer = styled.div`
+  padding: 10px;
+`

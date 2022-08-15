@@ -13,7 +13,8 @@ import {
   StyledLabel,
   StyledInput,
   StyledCheckboxContainer,
-  StyledCheckmark
+  StyledCheckmark,
+  StyledLastSearchesContainer
 } from "./StyledComponents";
 import { IconChevron } from "./icons/IconChevron.jsx";
 
@@ -29,10 +30,16 @@ const SORTS = {
 
 // Custom Hook
 const useSemiPersistentState = (key, initialState) => {
-  const [value, setValue] = useState(localStorage.getItem(key) || initialState);
+  let storedValue = localStorage.getItem(key);
+  try {
+    storedValue = JSON.parse(storedValue)
+  } catch (err) {}
+
+  const [value, setValue] = useState(storedValue != null ? storedValue : initialState);
 
   useEffect(() => {
-    localStorage.setItem(key, value);
+    const toStore = typeof value === "object" ? JSON.stringify(value) : value;
+    localStorage.setItem(key, toStore);
   }, [value, key]);
 
   return [value, setValue];
@@ -74,18 +81,38 @@ const getURL = (searchTerm, searchLatest) => {
   return `${API_ENDPOINT}${searchLatest}?query=${searchTerm}&tags=story`;
 }
 
+const updateSearchRequests = (searchRequests, searchTerm) => {
+  const updatedRequests = searchRequests.concat(searchTerm);
+  const noDuplicatesInARow = updatedRequests.reduce((result, searchRequest, index) => {
+    if (index === 0) {
+      return result.concat(searchRequest);
+    }
+    const previousSearchRequest = result[result.length - 1];
+    if (searchRequest === previousSearchRequest) {
+      return result;
+    } else {
+      return result.concat(searchRequest);
+    }
+  }, []);
+  if (noDuplicatesInARow.length > 6) {
+    noDuplicatesInARow.shift();
+  }
+  return noDuplicatesInARow;
+}
+
 const App = () => {
   // const [searchTerm, setSearchTerm] = useState(localStorage.getItem("search") || "");
   const [searchTerm, setSearchTerm] = useSemiPersistentState("search", "React");
   const [searchLatest, setSearchLatest] = useState("");
   const [stories, dispatchStories] = useReducer(storiesReducer, { data: [], isLoading: false, isError: false });
-  const [url, setUrl] = useState(getURL(searchTerm, searchLatest));
+  const [searchRequests, setSearchRequests] = useSemiPersistentState("last-searches", [searchTerm]);
 
   const handleFetchStories = useCallback(async () => {
     dispatchStories({ type: "STORIES_FETCH_INIT" });
 
     try {
-      const result = await axios.get(url);
+      const currentSearchRequest = searchRequests[searchRequests.length - 1];
+      const result = await axios.get(getURL(currentSearchRequest, searchLatest));
 
       dispatchStories({
         type: "STORIES_FETCH_SUCCESS",
@@ -95,7 +122,7 @@ const App = () => {
       dispatchStories({ type: "STORIES_FETCH_FAILURE" });
     }
 
-  }, [url]);
+  }, [searchRequests, searchLatest]);
 
   useEffect(() => {
     handleFetchStories();
@@ -109,13 +136,18 @@ const App = () => {
   }
 
   const handleSearchInput = (event) => {
+    console.log("search input")
     setSearchTerm(event.target.value);
   }
 
-  const handleSearchSubmit = (event) => {
-    setUrl(getURL(searchTerm, searchLatest));
+  const handleSearch = (searchTerm) => {
+    const updatedSearchRequests = updateSearchRequests(searchRequests, searchTerm);
+    setSearchRequests(updatedSearchRequests);
+  }
 
+  const handleSearchSubmit = (event) => {
     event.preventDefault();
+    handleSearch(searchTerm);
   }
 
   const handleCheckboxChange = (event) => {
@@ -126,9 +158,12 @@ const App = () => {
     }
   }
 
-  useEffect(() => {
-    console.log(url)
-  }, [url]);
+  const handleLastSearch = (searchTerm) => {
+    setSearchTerm(searchTerm);
+    handleSearch(searchTerm);
+  }
+
+  const lastSearches = searchRequests.slice(0, -1).reverse();
 
   return (
     <StyledContainer>
@@ -141,6 +176,8 @@ const App = () => {
         onCheckboxChange={handleCheckboxChange}
       />
 
+      <LastSearches lastSearches={lastSearches} onLastSearch={handleLastSearch} />
+
       {stories.isError && <p>Something went wrong...</p>}
 
       {stories.isLoading ? (
@@ -152,6 +189,24 @@ const App = () => {
 
   );
 };
+
+const LastSearches = ({ lastSearches, onLastSearch }) => {
+  return (
+    <StyledLastSearchesContainer>
+      {lastSearches.map((searchRequest, index) => {
+        return (
+          <StyledButtonSmall
+            key={searchRequest + index}
+            onClick={() => onLastSearch(searchRequest)}
+            marginRight={true}
+          >
+            {searchRequest}
+          </StyledButtonSmall>
+        );
+      })}
+    </StyledLastSearchesContainer>
+  )
+}
 
 const List = ({ list, onRemoveItem }) => {
   const [sort, setSort] = useState({

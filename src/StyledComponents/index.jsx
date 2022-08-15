@@ -8,6 +8,10 @@ export const StyledContainer = styled.div`
   background: linear-gradient(to left, #b6fbff, #83a4d4);
 
   color: #171212;
+
+  @media (max-width: 600px) {
+    padding: 10px;
+  }
 `;
 
 export const StyledHeadlinePrimary = styled.h1`
@@ -15,6 +19,12 @@ export const StyledHeadlinePrimary = styled.h1`
   font-weight: 300;
   letter-spacing: 2px;
 `;
+
+export const StyledList = styled.ul`
+  @media (max-width: 600px) {
+    padding: 0;
+  }
+`
 
 export const StyledItem = styled.li`
   display: flex;

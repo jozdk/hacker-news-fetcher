@@ -14,7 +14,8 @@ import {
   StyledInput,
   StyledCheckboxContainer,
   StyledCheckmark,
-  StyledLastSearchesContainer
+  StyledLastSearchesContainer,
+  StyledList
 } from "./StyledComponents";
 import { IconChevron } from "./icons/IconChevron.jsx";
 
@@ -33,7 +34,7 @@ const useSemiPersistentState = (key, initialState) => {
   let storedValue = localStorage.getItem(key);
   try {
     storedValue = JSON.parse(storedValue)
-  } catch (err) {}
+  } catch (err) { }
 
   const [value, setValue] = useState(storedValue != null ? storedValue : initialState);
 
@@ -94,14 +95,14 @@ const updateSearchRequests = (searchRequests, searchTerm) => {
       return result.concat(searchRequest);
     }
   }, []);
-  if (noDuplicatesInARow.length > 6) {
-    noDuplicatesInARow.shift();
+  const noEmptySearchTerms = noDuplicatesInARow.filter((searchTerm, index) => index === noDuplicatesInARow.length - 1 || searchTerm !== "")
+  if (noEmptySearchTerms.length > 6) {
+    noEmptySearchTerms.shift();
   }
-  return noDuplicatesInARow;
+  return noEmptySearchTerms;
 }
 
 const App = () => {
-  // const [searchTerm, setSearchTerm] = useState(localStorage.getItem("search") || "");
   const [searchTerm, setSearchTerm] = useSemiPersistentState("search", "React");
   const [searchLatest, setSearchLatest] = useState("");
   const [stories, dispatchStories] = useReducer(storiesReducer, { data: [], isLoading: false, isError: false });
@@ -112,7 +113,9 @@ const App = () => {
 
     try {
       const currentSearchRequest = searchRequests[searchRequests.length - 1];
-      const result = await axios.get(getURL(currentSearchRequest, searchLatest));
+      const url = currentSearchRequest ? getURL(currentSearchRequest, searchLatest) : API_ENDPOINT + "?tags=front_page";
+      // console.log(url);
+      const result = await axios.get(url);
 
       dispatchStories({
         type: "STORIES_FETCH_SUCCESS",
@@ -136,7 +139,6 @@ const App = () => {
   }
 
   const handleSearchInput = (event) => {
-    console.log("search input")
     setSearchTerm(event.target.value);
   }
 
@@ -150,16 +152,17 @@ const App = () => {
     handleSearch(searchTerm);
   }
 
+  const handleLastSearch = (searchTerm) => {
+    setSearchTerm(searchTerm);
+    handleSearch(searchTerm);
+  }
+
   const handleCheckboxChange = (event) => {
     if (event.target.checked) {
       setSearchLatest("_by_date");
     } else {
       setSearchLatest("");
     }
-  }
-
-  const handleLastSearch = (searchTerm) => {
-    setSearchTerm(searchTerm);
     handleSearch(searchTerm);
   }
 
@@ -167,7 +170,7 @@ const App = () => {
 
   return (
     <StyledContainer>
-      <StyledHeadlinePrimary>My Hacker Stories</StyledHeadlinePrimary>
+      <StyledHeadlinePrimary>Hacker News Fetcher</StyledHeadlinePrimary>
 
       <SearchForm
         searchTerm={searchTerm}
@@ -228,14 +231,16 @@ const List = ({ list, onRemoveItem }) => {
     : sortFunction(list);
 
   return (
-    <ul>
+    <StyledList>
       <ListHead sort={sort} handleSort={handleSort} />
-      {sortedList.map((item) => <Item
-        key={item.objectID}
-        item={item}
-        onRemoveItem={onRemoveItem}
-      />)}
-    </ul>
+      {sortedList.map((item) => (
+        <Item
+          key={item.objectID}
+          item={item}
+          onRemoveItem={onRemoveItem}
+        />
+      ))}
+    </StyledList>
   )
 };
 
@@ -262,7 +267,9 @@ const ListHead = ({ sort, handleSort }) => {
         Date
         <IconChevron sort={sort} column="CREATED_AT" handleSort={handleSort} />
       </StyledColumn>
-      <StyledColumn width="10%"></StyledColumn>
+      <StyledColumn width="10%">
+        Action
+      </StyledColumn>
     </StyledHeadItem>
   )
 }

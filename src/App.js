@@ -23,7 +23,8 @@ const SORTS = {
   TITLE: (list) => sortBy(list, "title"),
   AUTHOR: (list) => sortBy(list, "author"),
   COMMENT: (list) => sortBy(list, "num_comments").reverse(),
-  POINT: (list) => sortBy(list, "points").reverse()
+  POINT: (list) => sortBy(list, "points").reverse(),
+  CREATED_AT: (list) => sortBy(list, "created_at").reverse()
 }
 
 // Custom Hook
@@ -190,7 +191,7 @@ const ListHead = ({ sort, handleSort }) => {
         Title
         <IconChevron sort={sort} column="TITLE" handleSort={handleSort} />
       </StyledColumn>
-      <StyledColumn width="30%">
+      <StyledColumn width="20%">
         Author
         <IconChevron sort={sort} column="AUTHOR" handleSort={handleSort} />
       </StyledColumn>
@@ -201,6 +202,10 @@ const ListHead = ({ sort, handleSort }) => {
       <StyledColumn width="10%">
         Points
         <IconChevron sort={sort} column="POINT" handleSort={handleSort} />
+      </StyledColumn>
+      <StyledColumn width="10%">
+        Date
+        <IconChevron sort={sort} column="CREATED_AT" handleSort={handleSort} />
       </StyledColumn>
       <StyledColumn width="10%"></StyledColumn>
     </StyledHeadItem>
@@ -213,9 +218,10 @@ const Item = ({ item, onRemoveItem }) => {
       <StyledColumn width="40%">
         <a href={item.url}>{item.title}</a>
       </StyledColumn>
-      <StyledColumn width="30%">{item.author}</StyledColumn>
+      <StyledColumn width="20%">{item.author}</StyledColumn>
       <StyledColumn width="10%">{item.num_comments}</StyledColumn>
       <StyledColumn width="10%">{item.points}</StyledColumn>
+      <StyledColumn width="10%">{new Date(item.created_at).toLocaleDateString("fr")}</StyledColumn>
       <StyledColumn width="10%">
         <StyledButtonSmall type="button" onClick={() => onRemoveItem(item)}>
           Dismiss

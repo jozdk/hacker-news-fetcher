@@ -2,6 +2,8 @@
 
 Fetches stories from the Hacker News API, sorted by relevance, points, and number of comments. Optionally, stories can also be searched by date.
 
+This project was built following (in part) the instructions of "The Road To Learn React" by Robin Wieruch.
+
 ## Use cases
 
 - find stories from Hacker News about topics you're interested in

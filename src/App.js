@@ -14,10 +14,11 @@ import {
   StyledInput,
   StyledCheckboxContainer,
   StyledCheckmark,
-  StyledLastSearchesContainer,
   StyledList
 } from "./StyledComponents";
-import { IconChevron } from "./icons/IconChevron.jsx";
+import { LastSearches } from "./components/LastSearches.jsx";
+import { ButtonMore } from "./components/ButtonMore.jsx";
+import { IconChevron } from "./components/icons/IconChevron.jsx";
 
 const API_ENDPOINT = "https://hn.algolia.com/api/v1/search";
 const SORTS = {
@@ -60,7 +61,10 @@ const storiesReducer = (state, action) => {
         ...state, // why?
         isLoading: false,
         isError: false,
-        data: action.payload
+        data: action.payload.page === 0
+          ? action.payload.list
+          : state.data.concat(action.payload.list),
+        page: action.payload.page
       };
     case "STORIES_FETCH_FAILURE":
       return {
@@ -73,13 +77,22 @@ const storiesReducer = (state, action) => {
         ...state,
         data: state.data.filter((story) => action.payload.objectID !== story.objectID)
       };
+    case "UPDATE_PAGE":
+      return {
+        ...state,
+        page: action.payload
+      };
     default:
       throw new Error();
   }
 }
 
-const getURL = (searchTerm, searchLatest) => {
-  return `${API_ENDPOINT}${searchLatest}?query=${searchTerm}&tags=story`;
+const getURL = (searchTerm, searchLatest, page) => {
+  if (!searchTerm) {
+    return API_ENDPOINT + "?tags=front_page";
+  }
+
+  return `${API_ENDPOINT}${searchLatest}?query=${searchTerm}&page=${page}&tags=story`;
 }
 
 const updateSearchRequests = (searchRequests, searchTerm) => {
@@ -105,7 +118,7 @@ const updateSearchRequests = (searchRequests, searchTerm) => {
 const App = () => {
   const [searchTerm, setSearchTerm] = useSemiPersistentState("search", "React");
   const [searchLatest, setSearchLatest] = useState("");
-  const [stories, dispatchStories] = useReducer(storiesReducer, { data: [], isLoading: false, isError: false });
+  const [stories, dispatchStories] = useReducer(storiesReducer, { data: [], page: 0, isLoading: false, isError: false });
   const [searchRequests, setSearchRequests] = useSemiPersistentState("last-searches", [searchTerm]);
 
   const handleFetchStories = useCallback(async () => {
@@ -113,19 +126,22 @@ const App = () => {
 
     try {
       const currentSearchRequest = searchRequests[searchRequests.length - 1];
-      const url = currentSearchRequest ? getURL(currentSearchRequest, searchLatest) : API_ENDPOINT + "?tags=front_page";
+      const url = getURL(currentSearchRequest, searchLatest, stories.page);
       // console.log(url);
       const result = await axios.get(url);
-
+      console.log(stories.page, result.data.page)
       dispatchStories({
         type: "STORIES_FETCH_SUCCESS",
-        payload: result.data.hits
+        payload: {
+          list: result.data.hits,
+          page: result.data.page
+        }
       });
     } catch {
       dispatchStories({ type: "STORIES_FETCH_FAILURE" });
     }
 
-  }, [searchRequests, searchLatest]);
+  }, [searchRequests, searchLatest, stories.page]);
 
   useEffect(() => {
     handleFetchStories();
@@ -145,6 +161,10 @@ const App = () => {
   const handleSearch = (searchTerm) => {
     const updatedSearchRequests = updateSearchRequests(searchRequests, searchTerm);
     setSearchRequests(updatedSearchRequests);
+    dispatchStories({
+      type: "UPDATE_PAGE",
+      payload: 0
+    })
   }
 
   const handleSearchSubmit = (event) => {
@@ -166,6 +186,13 @@ const App = () => {
     handleSearch(searchTerm);
   }
 
+  const handleMoreRequest = () => {
+    dispatchStories({
+      type: "UPDATE_PAGE",
+      payload: stories.page + 1
+    })
+  }
+
   const lastSearches = searchRequests.slice(0, -1).reverse();
 
   return (
@@ -183,33 +210,17 @@ const App = () => {
 
       {stories.isError && <p>Something went wrong...</p>}
 
+      <List list={stories.data} onRemoveItem={handleRemoveStory} />
+
       {stories.isLoading ? (
-        <p>Loading...</p>
+        <p style={{ textAlign: "center" }}>Loading...</p>
       ) : (
-        <List list={stories.data} onRemoveItem={handleRemoveStory} />
+        <ButtonMore onMoreRequest={handleMoreRequest} />
       )}
     </StyledContainer>
 
   );
 };
-
-const LastSearches = ({ lastSearches, onLastSearch }) => {
-  return (
-    <StyledLastSearchesContainer>
-      {lastSearches.map((searchRequest, index) => {
-        return (
-          <StyledButtonSmall
-            key={searchRequest + index}
-            onClick={() => onLastSearch(searchRequest)}
-            marginRight={true}
-          >
-            {searchRequest}
-          </StyledButtonSmall>
-        );
-      })}
-    </StyledLastSearchesContainer>
-  )
-}
 
 const List = ({ list, onRemoveItem }) => {
   const [sort, setSort] = useState({

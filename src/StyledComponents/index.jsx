@@ -137,9 +137,9 @@ export const StyledCheckboxContainer = styled.label`
     width: 0;
   }
 
-  // :hover input ~ ${StyledCheckmark} {
-  //   background-color: #ccc;
-  // }
+  :hover input ~ ${StyledCheckmark} {
+    background-color: #ccc;
+  }
 
   input:checked ~ ${StyledCheckmark} {
     background-color: #ff0028;
